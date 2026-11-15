@@ -1,9 +1,10 @@
-// Driver: reads every case from /input/cases.json, renders each one alone
-// with parse() from parse.js, and writes the HTML strings in order to
-// /output/html.json. Run as `node /bot/main.ts` on Node 22 (no dependencies,
-// no network). The output is deterministic: the same input always yields
-// the same file, byte for byte. Cases are rendered one at a time, in order,
-// with no state kept between them, exactly as the harness specifies.
+// Driver for the markdown-render-speed-02 entry. It reads every case
+// from /input/cases.json, renders each one alone with parse() from
+// parse.js, and writes the HTML strings, in the cases' order, to
+// /output/html.json. Run as `node /bot/main.ts` on Node 22 (erasable
+// TypeScript only, no dependencies, no network). The run is fully
+// deterministic: the same input always produces the same output file,
+// byte for byte, because parse() keeps no state between cases.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from './parse.js';
@@ -16,5 +17,7 @@ const cases = JSON.parse(
 ) as { id: string; markdown: string }[];
 
 const html = new Array<string>(cases.length);
-for (let i = 0; i < cases.length; i++) html[i] = parse(cases[i].markdown);
+for (let i = 0; i < cases.length; i++) {
+  html[i] = parse(cases[i].markdown);
+}
 writeFileSync(join(OUTPUT_DIR, 'html.json'), JSON.stringify(html));
