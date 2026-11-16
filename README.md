@@ -4,29 +4,32 @@
 
 # markdown-render-speed-02 entry
 
-A faster drop-in for marked 18.1.3: `parse(markdown)` returns exactly the
-HTML marked renders with its default options, for every input — verified
-720/720 on the practice set — while rendering measurably faster.
+A quicker replacement for marked 18.1.3 that renders byte-for-byte the
+same HTML marked does under its defaults. It passes all 720 practice
+cases, and it does so faster than marked itself.
 
-Entry point: `main.ts` (reads `/input/cases.json`, writes
-`/output/html.json`). `parse.js` is a dependency-free ES module that keeps
-one `Lexer`/`Parser` pair alive and resets only the per-parse state, so
-repeated parses skip the fresh Lexer/Tokenizer/Parser/Renderer
-construction `marked.parse` does on every call. The parser itself is a
-fork of marked 18.1.3 vendored in `vendor/marked/` (MIT, credited in
-`vendor/marked/NOTICE`), with its hot paths optimised in place:
+How it works:
 
-- `lex()`: the carriage-return normalisation is skipped when the input
-  contains no `\r`.
-- The emphasis/strong delimiter scan (`fe`) works backwards from the last
-  delimiter run instead of sweeping the whole string forwards.
-- The inline masking pass skips its punctuation and block-skip replaces
-  when the trigger characters (`` ` ``, `(`, `[`, `<`) are absent.
-- The list tokenizer takes first lines with `indexOf`, finds the first
-  non-space character with a manual scan, and only runs its
-  block-start tests on lines whose first non-space character could start
-  one.
+- `main.ts` is the harness driver: it loads `/input/cases.json` and
+  writes the rendered strings, in order, to `/output/html.json`.
+- `parse.js` exports the `parse(markdown)` function. Instead of building
+  a new Lexer, Tokenizer, Parser and Renderer for every call the way
+  `marked.parse` does, it holds on to one Lexer/Parser pair for the
+  whole process and only resets the state that belongs to a single
+  parse. That alone removes a large chunk of per-call work.
+- `vendor/marked/marked.esm.js` is a fork of marked 18.1.3 (MIT; see
+  `vendor/marked/NOTICE`) with the hottest code paths tuned:
+  - `lex()` leaves the input alone when it holds no carriage return,
+    rather than running the normalisation replace every time.
+  - The emphasis/strong closer scan searches backwards from the final
+    delimiter run instead of sweeping forward across the whole string.
+  - The inline masking step skips its punctuation and block-skip
+    substitutions unless one of the trigger characters (backtick,
+    `(`, `[`, `<`) is actually present.
+  - The list tokenizer grabs first lines with `indexOf`, locates the
+    first non-space character by hand, and only runs its block-start
+    checks on lines that could plausibly open a block.
 
-No caching or memoisation across cases: every `parse()` call computes its
-output from the markdown it was given, keeping nothing from earlier calls.
-Deterministic: two runs on the same input produce byte-identical output.
+There is no memoisation and no cache shared between cases: each call
+computes its result from the markdown it receives and nothing else, so
+running the same input twice gives byte-identical output.
