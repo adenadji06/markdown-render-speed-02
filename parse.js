@@ -1,29 +1,31 @@
-// Fast drop-in for marked 18.1.3.
+// A fast drop-in for marked 18.1.3.
 //
-// The parser itself is the fork vendored in vendor/marked/marked.esm.js
-// (marked's MIT-licensed build, optimised in place; see
+// The parser is the fork vendored under vendor/marked/marked.esm.js
+// (marked's MIT-licensed build, tuned in place; see
 // vendor/marked/LICENSE and vendor/marked/NOTICE).
 //
-// marked.parse() builds a fresh Lexer, Tokenizer, Parser and Renderer on
-// every call, and spreads the options object twice. With marked's default
-// options none of that state carries anything between parses: the Lexer,
-// Tokenizer and Parser hold no information from one parse to the next
-// except the tokens of the parse in progress. So this module keeps a
-// single Lexer/Parser pair for the lifetime of the process and, before
-// each parse, restores exactly the state a brand-new Lexer starts with.
+// marked.parse() constructs a new Lexer, Tokenizer, Parser and Renderer
+// on every call and spreads the options object twice. Under marked's
+// default options none of that per-call state holds anything from one
+// parse to the next: the Lexer, Tokenizer and Parser keep no information
+// between parses except the tokens of the parse currently running. So
+// this module holds a single Lexer/Parser pair for the life of the
+// process and, ahead of each parse, restores precisely the state a
+// freshly built Lexer begins with.
 //
-// Nothing is kept from one call to the next: parse(markdown) returns the
-// same string for a case parsed alone as for the same case parsed after
-// any other case. No caching, no memoisation across cases.
+// Nothing carries over from one call to the next: parse(markdown)
+// returns the same string for a case parsed on its own as for the same
+// case parsed after any other case. No caching, no memoisation across
+// cases.
 import { Lexer, Parser, getDefaults } from './vendor/marked/marked.esm.js';
 
 const options = getDefaults();
 const lexer = new Lexer(options);
 const parser = new Parser(options);
 
-/** The HTML marked 18.1.3 renders for `markdown`, with marked's defaults. */
+/** The HTML marked 18.1.3 renders for `markdown`, under marked's defaults. */
 export function parse(markdown) {
-  // Fresh-Lexer state: an empty token list with an empty link table, an
+  // State of a fresh Lexer: no tokens yet, an empty link table, an
   // empty inline queue, and the default lexer flags.
   lexer.tokens = [];
   lexer.tokens.links = Object.create(null);

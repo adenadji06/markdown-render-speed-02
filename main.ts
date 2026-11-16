@@ -1,15 +1,17 @@
 // Driver for the markdown-render-speed-02 entry.
 //
-// The harness runs `node /bot/main.ts` (Node 22, erasable TypeScript
-// only, no dependencies, no network). It reads every case from
-// /input/cases.json, renders each case on its own with parse() from
-// parse.js, and writes the HTML strings, in the cases' order, to
-// /output/html.json.
+// The harness executes `node /bot/main.ts` on Node 22 (erasable
+// TypeScript only, no dependencies, no network). It loads every case
+// from /input/cases.json, renders each one on its own through parse()
+// from parse.js, and writes the resulting HTML strings, in the cases'
+// order, to /output/html.json.
 //
-// The run is deterministic: parse() keeps no state between cases, so
-// the same input always produces the same output file, byte for byte.
-// Outside a container, MAKEFUN_INPUT_DIR and MAKEFUN_OUTPUT_DIR stand
-// in for /input and /output.
+// A run is deterministic: parse() carries no state from one case to the
+// next, so the same input always yields the same output file, byte for
+// byte. The output is a JSON array of 720 strings, one per case, in the
+// same order as the input. When run outside a container,
+// MAKEFUN_INPUT_DIR and MAKEFUN_OUTPUT_DIR take the place of /input and
+// /output.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from './parse.js';
@@ -22,10 +24,10 @@ const cases = JSON.parse(
 ) as { id: string; markdown: string }[];
 
 const html = new Array<string>(cases.length);
-const count = cases.length;
-// One parse per case, in order, each on its own: parse() keeps no state
-// between cases, so no case's output can depend on any earlier case.
-for (let i = 0; i < count; i++) {
+const total = cases.length;
+// Render one case at a time, in order. parse() keeps nothing between
+// cases, so no case's output can depend on any earlier case.
+for (let i = 0; i < total; i++) {
   html[i] = parse(cases[i].markdown);
 }
 writeFileSync(join(OUTPUT_DIR, 'html.json'), JSON.stringify(html));
